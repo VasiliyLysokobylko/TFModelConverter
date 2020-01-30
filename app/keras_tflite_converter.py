@@ -3,20 +3,19 @@ import imageio
 import numpy as np
 import imgaug
 
-from musket_core import generic
-
 
 class Converter:
-    def __init__(self, config_path):
-        self.cfg = generic.parse(config_path)
-        self.keras_model: tf.keras.Model = self.cfg.load_model(0, 0)
+    def __init__(self, weights_path):
+        self.keras_model = tf.keras.models.load_model(weights_path)
+        self.keras_model.summary()
 
     def contvert_to_tflite(self, output_tflite_path):
-        sess = tf.keras.backend.get_session()
-        converter = tf.lite.TFLiteConverter.from_session(sess=sess,
-                                                         input_tensors=self.keras_model.inputs,
-                                                         output_tensors=self.keras_model.outputs)
-        converter.target_ops = [tf.image.resize_nearest_neighbor]
+        converter = tf.lite.TFLiteConverter.from_keras_model(self.keras_model)
+
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+
+        converter.experimental_new_converter = True
+
         tflite_model = converter.convert()
         open(output_tflite_path, "wb").write(tflite_model)
 
